@@ -37,10 +37,10 @@ export function GroundingFiles({ files, onSelected }: Properties) {
     }
 
     return (
-        <Card className="m-4 max-w-full md:max-w-md lg:min-w-96 lg:max-w-2xl">
+        <Card className="m-4 max-w-full md:max-w-md lg:min-w-96 lg:max-w-2xl bg-gray-900 border-gray-700 shadow-2xl">
             <CardHeader>
-                <CardTitle className="text-xl">{t("groundingFiles.title")}</CardTitle>
-                <CardDescription>{t("groundingFiles.description")}</CardDescription>
+                <CardTitle className="text-xl text-white">{t("groundingFiles.title")}</CardTitle>
+                <CardDescription className="text-gray-300">{t("groundingFiles.description")}</CardDescription>
             </CardHeader>
             <CardContent>
                 <AnimatePresence>

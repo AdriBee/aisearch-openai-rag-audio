@@ -13,7 +13,7 @@ import useAudioPlayer from "@/hooks/useAudioPlayer";
 
 import { GroundingFile, ToolResult } from "./types";
 
-import logo from "./assets/logo.svg";
+// Removed Azure logo import
 
 function App() {
     const [isRecording, setIsRecording] = useState(false);
@@ -64,28 +64,38 @@ function App() {
     const { t } = useTranslation();
 
     return (
-        <div className="flex min-h-screen flex-col bg-gray-100 text-gray-900">
+        <div className="flex min-h-screen flex-col bg-black text-white">
             <div className="p-4 sm:absolute sm:left-4 sm:top-4">
-                <img src={logo} alt="Azure logo" className="h-16 w-16" />
+                <span className="text-xl font-bold text-white">SchoolMe</span>
             </div>
-            <main className="flex flex-grow flex-col items-center justify-center">
-                <h1 className="mb-8 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-4xl font-bold text-transparent md:text-7xl">
-                    {t("app.title")}
-                </h1>
-                <div className="mb-4 flex flex-col items-center justify-center">
+            <main className="flex flex-grow flex-col items-center justify-center px-4">
+                <div className="text-center mb-8">
+                    <h1 className="mb-4 text-white text-5xl font-bold md:text-7xl">
+                        {t("app.title")}
+                    </h1>
+                    <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto">
+                        Your AI-powered learning companion. Ask questions, explore topics, and learn through natural conversation.
+                    </p>
+                </div>
+                <div className="mb-8 flex flex-col items-center justify-center">
                     <Button
                         onClick={onToggleListening}
-                        className={`h-12 w-60 ${isRecording ? "bg-red-600 hover:bg-red-700" : "bg-purple-500 hover:bg-purple-600"}`}
+                        className={`h-16 w-72 text-lg font-semibold rounded-2xl border-2 transform transition-all duration-200 hover:scale-105 ${
+                            isRecording 
+                                ? "bg-red-600 hover:bg-red-700 border-red-500 text-white" 
+                                : "bg-white hover:bg-gray-100 border-white text-black"
+                        }`}
                         aria-label={isRecording ? t("app.stopRecording") : t("app.startRecording")}
                     >
                         {isRecording ? (
                             <>
-                                <MicOff className="mr-2 h-4 w-4" />
+                                <MicOff className="mr-3 h-6 w-6" />
                                 {t("app.stopConversation")}
                             </>
                         ) : (
                             <>
-                                <Mic className="mr-2 h-6 w-6" />
+                                <Mic className="mr-3 h-7 w-7" />
+                                Start Learning
                             </>
                         )}
                     </Button>
@@ -94,8 +104,8 @@ function App() {
                 <GroundingFiles files={groundingFiles} onSelected={setSelectedFile} />
             </main>
 
-            <footer className="py-4 text-center">
-                <p>{t("app.footer")}</p>
+            <footer className="py-6 text-center">
+                <p className="text-gray-400 text-sm">{t("app.footer")}</p>
             </footer>
 
             <GroundingFileView groundingFile={selectedFile} onClosed={() => setSelectedFile(null)} />

@@ -1,13 +1,13 @@
 {
     "app": {
-        "title": "Parlez à vos données",
-        "footer": "Créée avec Azure AI Search + Azure OpenAI",
+        "title": "SchoolMe",
+        "footer": "Votre Assistant d'Apprentissage IA",
         "stopRecording": "Arrêter l'enregistrement",
         "startRecording": "Commencer l'enregistrement",
         "stopConversation": "Arrêter la conversation"
     },
     "status": {
-        "notRecordingMessage": "Posez des questions sur les avantages sociaux des employés de Contoso",
+        "notRecordingMessage": "Posez-moi n'importe quelle question pour commencer à apprendre!",
         "conversationInProgress": "Conversation en cours"
     },
     "history": {

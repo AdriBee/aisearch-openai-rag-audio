@@ -1,13 +1,13 @@
 {
     "app": {
-        "title": "データと話す",
-        "footer": "Azure AI Search + Azure OpenAI で構築",
+        "title": "SchoolMe",
+        "footer": "AIパワー学習アシスタント",
         "stopRecording": "録音を停止",
         "startRecording": "録音を開始",
         "stopConversation": "会話を停止"
     },
     "status": {
-        "notRecordingMessage": "Contoso 従業員の福利厚生について質問してください",
+        "notRecordingMessage": "学習を始めるために何でも質問してください！",
         "conversationInProgress": "会話が進行中"
     },
     "history": {
