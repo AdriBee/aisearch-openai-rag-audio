@@ -103,13 +103,36 @@ The steps below will provision Azure resources and deploy the application code t
 
 1. After the application has been successfully deployed you will see a URL printed to the console.  Navigate to that URL to interact with the app in your browser. To try out the app, click the "Start conversation button", say "Hello", and then ask a question about your data like "What is the whistleblower policy for Contoso electronics?" You can also now run the app locally by following the instructions in [the next section](#development-server).
 
-## Development server
+## Development Environment
 
-You can run this app locally using either the Azure services you provisioned by following the [deployment instructions](#deploying-the-app), or by pointing the local app at already [existing services](docs/existing_services.md).
+SchoolMe uses React Native for cross-platform development (web, iOS, Android) with a Python backend.
 
-1. If you deployed with `azd up`, you should see a `app/backend/.env` file with the necessary environment variables.
+### Quick Start (Recommended)
 
-2. If did *not* use `azd up`, you will need to create `app/backend/.env` file with the following environment variables:
+**Single Command Development:**
+
+```bash
+# Linux/Mac
+npm run dev
+# or
+./scripts/dev.sh
+
+# Windows
+npm run dev:win
+# or
+.\scripts\dev.ps1
+```
+
+This starts both backend and frontend with:
+- 🐍 **Backend**: http://localhost:8765 (Python + Azure AI)
+- 📱 **Frontend**: http://localhost:8080 (React Native + Hot Reload)
+- 🌐 **Full App**: http://localhost:8765 (Complete experience)
+
+### Manual Setup
+
+If you prefer to start services individually:
+
+1. **Environment Setup**: If you deployed with `azd up`, you should see a `app/backend/.env` file. Otherwise, create it with:
 
    ```shell
    AZURE_OPENAI_ENDPOINT=wss://<your instance name>.openai.azure.com
@@ -121,23 +144,22 @@ You can run this app locally using either the Azure services you provisioned by 
    AZURE_SEARCH_API_KEY=<your api key>
    ```
 
-   To use Entra ID (your user when running locally, managed identity when deployed) simply don't set the keys.
-
-3. Run this command to start the app:
-
-   Windows:
-
-   ```pwsh
-   pwsh .\scripts\start.ps1
-   ```
-
-   Linux/Mac:
-
+2. **Start Backend Only**:
    ```bash
-   ./scripts/start.sh
+   ./scripts/start.sh  # Builds frontend + starts backend
    ```
 
-4. The app is available on [http://localhost:8765](http://localhost:8765).
+3. **Start Frontend Development Server**:
+   ```bash
+   cd app/frontend
+   npx expo start --web --port 8080
+   ```
+
+### Development URLs
+
+- **🎯 Full App Testing**: http://localhost:8765 (use this for AI voice testing)
+- **🛠️ Frontend Development**: http://localhost:8080 (use this for UI development)
+- **📱 Mobile Testing**: Scan QR code with Expo Go app
 
    Once the app is running, when you navigate to the URL above you should see the start screen of the app:
    ![app screenshot](docs/talktoyourdataapp.png)

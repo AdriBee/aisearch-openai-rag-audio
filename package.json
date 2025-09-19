@@ -1,0 +1,21 @@
+{
+  "name": "schoolme",
+  "version": "1.0.0",
+  "description": "SchoolMe - AI-Powered Voice Learning Assistant",
+  "scripts": {
+    "dev": "./scripts/dev-simple.sh",
+    "dev:advanced": "./scripts/dev.sh",
+    "dev:win": "powershell -ExecutionPolicy Bypass -File .\\scripts\\dev.ps1",
+    "start": "./scripts/start.sh",
+    "deploy": "azd deploy",
+    "deploy:all": "azd up",
+    "setup": "./scripts/setup.sh"
+  },
+  "keywords": ["ai", "education", "voice", "react-native", "azure"],
+  "author": "SchoolMe Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.11.0"
+  }
+}

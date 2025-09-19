@@ -108,6 +108,19 @@ export const useRealtime = (props: UseRealtimeProps) => {
               console.error('Backend error details:', message);
               props.onReceivedError?.(message);
               break;
+            case 'response.text.delta':
+              console.log('Text delta:', message);
+              props.onReceivedResponseAudioTranscriptDelta?.(message);
+              break;
+            case 'response.output_item.added':
+              console.log('Output item added:', message);
+              break;
+            case 'response.content_part.added':
+              console.log('Content part added:', message);
+              break;
+            case 'response.text.done':
+              console.log('Text done:', message);
+              break;
             default:
               console.log('Unhandled message type:', message.type, message);
               break;

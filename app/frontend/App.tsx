@@ -8,7 +8,8 @@ import { Button } from './src/components/Button';
 import StatusMessage from './src/components/StatusMessage';
 import GroundingFiles from './src/components/GroundingFiles';
 import GroundingFileView from './src/components/GroundingFileView';
-import { GroundingFile, ToolResult } from './src/types';
+import ChatTranscript from './src/components/ChatTranscript';
+import { GroundingFile, ToolResult, ChatMessage } from './src/types';
 
 // Import hooks
 import useRealtime from './src/hooks/useRealtime';
@@ -22,6 +23,9 @@ export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [groundingFiles, setGroundingFiles] = useState<GroundingFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<GroundingFile | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
+  const [currentAssistantMessage, setCurrentAssistantMessage] = useState<string>('');
   
   const { t } = useTranslation();
 
@@ -52,13 +56,71 @@ export default function App() {
       playAudio(message.delta);
     },
     onReceivedResponseDone: (message) => {
-      console.log("Response completed");
+      console.log("Response completed, current message:", currentAssistantMessage);
+      
+      // Try to extract any text from the response.done message itself
+      let finalText = currentAssistantMessage.trim();
+      
+      // Check various places where the text might be in the response
+      if (!finalText && message.response?.output) {
+        for (const output of message.response.output) {
+          if (output.content) {
+            for (const content of output.content) {
+              if (content.transcript) {
+                finalText = content.transcript;
+                break;
+              } else if (content.text) {
+                finalText = content.text;
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // Finalize the current assistant message if we have content
+      if (finalText) {
+        console.log("Adding assistant message:", finalText);
+        setChatMessages(prev => [...prev, {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: finalText,
+          timestamp: new Date()
+        }]);
+        setCurrentAssistantMessage('');
+      } else {
+        console.log("No assistant text found in response");
+      }
     },
     onReceivedResponseAudioTranscriptDelta: (message) => {
-      console.log("Audio transcript:", message);
+      console.log("Audio transcript delta:", message);
+      // Accumulate assistant message content from various delta sources
+      let deltaText = '';
+      
+      if (message.delta) {
+        deltaText = message.delta;
+      } else if (message.text) {
+        deltaText = message.text;
+      } else if (message.content) {
+        deltaText = message.content;
+      }
+      
+      if (deltaText) {
+        console.log("Adding delta text:", deltaText);
+        setCurrentAssistantMessage(prev => prev + deltaText);
+      }
     },
     onReceivedInputAudioTranscriptionCompleted: (message) => {
       console.log("Input transcription completed:", message);
+      // Add user message to chat
+      if (message.transcript && message.transcript.trim()) {
+        setChatMessages(prev => [...prev, {
+          id: `user-${Date.now()}`,
+          role: 'user',
+          content: message.transcript.trim(),
+          timestamp: new Date()
+        }]);
+      }
     },
     onReceivedInputAudioBufferSpeechStarted: () => {
       console.log("Speech started - stopping playback");
@@ -98,6 +160,9 @@ export default function App() {
         // Clear everything for fresh start
         setGroundingFiles([]);
         setSelectedFile(null);
+        setChatMessages([]);
+        setCurrentUserMessage('');
+        setCurrentAssistantMessage('');
         
         // Check permissions first (but allow web to proceed since we handle it in the recording)
         if (hasPermission === false && Platform.OS !== 'web') {
@@ -150,6 +215,9 @@ export default function App() {
         // Clear grounding files for fresh start
         setGroundingFiles([]);
         setSelectedFile(null);
+        setChatMessages([]);
+        setCurrentUserMessage('');
+        setCurrentAssistantMessage('');
         
         console.log('Recording session stopped and conversation ended');
       }
@@ -195,13 +263,21 @@ export default function App() {
       </View>
 
       {/* Main Content */}
-      <View style={styles.mainContent}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>{t('app.title')}</Text>
-          <Text style={styles.subtitle}>
-            Your AI-powered learning companion. Ask questions, explore topics, and learn through natural conversation.
-          </Text>
-        </View>
+      <View style={[styles.mainContent, chatMessages.length > 0 && styles.mainContentWithChat]}>
+        {chatMessages.length === 0 && (
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>{t('app.title')}</Text>
+            <Text style={styles.subtitle}>
+              Your AI-powered learning companion. Ask questions, explore topics, and learn through natural conversation.
+            </Text>
+          </View>
+        )}
+        
+        {chatMessages.length > 0 && (
+          <View style={styles.compactTitleContainer}>
+            <Text style={styles.compactTitle}>{t('app.title')}</Text>
+          </View>
+        )}
 
         <View style={styles.buttonContainer}>
           <Button
@@ -259,12 +335,22 @@ export default function App() {
           )}
         </View>
 
-        {/* Grounding Files */}
-        <GroundingFiles 
-          files={groundingFiles} 
-          onFileSelected={setSelectedFile} 
+        {/* Chat Transcript */}
+        <ChatTranscript 
+          messages={chatMessages}
+          isVisible={chatMessages.length > 0}
         />
       </View>
+      
+      {/* Grounding Files - Outside main content to prevent overflow */}
+      {groundingFiles.length > 0 && (
+        <View style={styles.groundingSection}>
+          <GroundingFiles 
+            files={groundingFiles} 
+            onFileSelected={setSelectedFile} 
+          />
+        </View>
+      )}
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -319,9 +405,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
   },
+  mainContentWithChat: {
+    justifyContent: 'flex-start',
+    paddingTop: 20,
+  },
   titleContainer: {
     alignItems: 'center',
     marginBottom: 32,
+  },
+  compactTitleContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 8,
   },
   title: {
     fontSize: Platform.OS === 'web' ? 72 : 48,
@@ -329,6 +424,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'center',
     marginBottom: 16,
+  },
+  compactTitle: {
+    fontSize: Platform.OS === 'web' ? 32 : 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: Platform.OS === 'web' ? 20 : 18,
@@ -388,6 +489,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',
+  },
+  groundingSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    maxHeight: 120, // Limit height to prevent taking too much space
   },
   footer: {
     paddingVertical: 24,
