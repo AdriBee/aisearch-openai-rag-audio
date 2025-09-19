@@ -10,11 +10,13 @@ interface UseAudioRecorderProps {
 
 export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
   const recordingRef = useRef<Audio.Recording | null>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const isMutedRef = useRef<boolean>(false);
 
   // Check permissions on mount
   useEffect(() => {
@@ -70,6 +72,42 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
       console.error('Error configuring audio mode:', error);
     }
   }, []);
+
+  // Keep ref in sync to avoid stale closures in audio callbacks
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+
+  const mute = useCallback(() => {
+    try {
+      setIsMuted(true);
+      // On web, also disable the microphone track to avoid VAD triggering
+      if (Platform.OS === 'web' && streamRef.current) {
+        streamRef.current.getAudioTracks().forEach(t => (t.enabled = false));
+      }
+    } catch (e) {
+      // no-op
+    }
+  }, []);
+
+  const unmute = useCallback(() => {
+    try {
+      setIsMuted(false);
+      if (Platform.OS === 'web' && streamRef.current) {
+        streamRef.current.getAudioTracks().forEach(t => (t.enabled = true));
+      }
+    } catch (e) {
+      // no-op
+    }
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    if (isMutedRef.current) {
+      unmute();
+    } else {
+      mute();
+    }
+  }, [mute, unmute]);
 
   const requestPermissions = useCallback(async () => {
     try {
@@ -180,6 +218,10 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
         
         // Create AudioRecorder with callback to handle PCM data
         const recorder = new AudioRecorder((buffer: Iterable<number>) => {
+          // Drop audio chunks while muted
+          if (isMutedRef.current) {
+            return;
+          }
           // Convert Int16Array to base64
           const int16Array = new Int16Array(buffer as ArrayLike<number>);
           const uint8Array = new Uint8Array(int16Array.buffer);
@@ -301,6 +343,10 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
   return {
     start,
     stop,
+    mute,
+    unmute,
+    toggleMute,
+    isMuted,
     isRecording,
     hasPermission,
     permissionStatus,

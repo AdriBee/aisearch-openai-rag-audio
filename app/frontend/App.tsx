@@ -193,6 +193,10 @@ export default function App() {
   const { 
     start: startAudioRecording, 
     stop: stopAudioRecording, 
+    mute: muteMic,
+    unmute: unmuteMic,
+    toggleMute: toggleMuteMic,
+    isMuted,
     hasPermission, 
     permissionStatus,
     requestPermissions: requestAudioPermissions 
@@ -368,6 +372,36 @@ export default function App() {
               </Text>
             </View>
           </Button>
+          {isRecording && (
+            <View style={{ marginTop: 12 }}>
+              <Button
+                onPress={toggleMuteMic}
+                style={[
+                  styles.mainButton,
+                  isMuted ? styles.stopButton : styles.startButton
+                ]}
+                textStyle={[
+                  styles.buttonText,
+                  isMuted ? styles.stopButtonText : styles.startButtonText
+                ]}
+              >
+                <View style={styles.buttonContent}>
+                  <MaterialIcons
+                    name={isMuted ? 'mic-off' : 'mic-none'}
+                    size={24}
+                    color={isMuted ? '#ffffff' : '#000000'}
+                    style={styles.buttonIcon}
+                  />
+                  <Text style={[
+                    styles.buttonText,
+                    isMuted ? styles.stopButtonText : styles.startButtonText
+                  ]}>
+                    {isMuted ? 'Unmute Mic' : 'Mute Mic'}
+                  </Text>
+                </View>
+              </Button>
+            </View>
+          )}
           
           <StatusMessage isRecording={isRecording} />
           
