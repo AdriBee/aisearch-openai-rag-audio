@@ -1,4 +1,12 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
+import { 
+  useAudioRecorder as useExpoAudioRecorder, 
+  useAudioRecorderState,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioSampleListener
+} from 'expo-audio';
 import { Audio } from 'expo-av';
 import { Platform, Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -13,10 +21,18 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
   const [isMuted, setIsMuted] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  
+  // For web (AudioWorklet approach)
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isMutedRef = useRef<boolean>(false);
+  
+  // For native (expo-audio approach)
+  const expoRecorder = Platform.OS !== 'web' ? useExpoAudioRecorder(RecordingPresets.HIGH_QUALITY) : null;
+  const recorderState = Platform.OS !== 'web' ? useAudioRecorderState(expoRecorder!) : null;
+  
+  // For expo-av fallback
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   // Check permissions on mount
   useEffect(() => {
@@ -34,8 +50,8 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
         setPermissionStatus('unknown');
         console.log('Web platform - permissions will be checked when recording starts');
       } else {
-        // On mobile platforms, use expo-av for permissions
-        const permission = await Audio.getPermissionsAsync();
+        // On mobile platforms, use expo-audio for permissions
+        const permission = await AudioModule.getRecordingPermissionsAsync();
         console.log('Current permission status:', permission);
         
         if (permission.status === 'granted') {
@@ -57,12 +73,9 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
   const configureAudioMode = useCallback(async () => {
     try {
       if (Platform.OS !== 'web') {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-          staysActiveInBackground: false,
+        await setAudioModeAsync({
+          allowsRecording: true,
+          playsInSilentMode: true,
         });
         console.log('Audio mode configured for recording');
       } else {
@@ -77,6 +90,33 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
   useEffect(() => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
+
+  // Set up real-time audio sample listener for expo-audio (native only)
+  if (Platform.OS !== 'web' && expoRecorder) {
+    useAudioSampleListener(expoRecorder, (sample) => {
+      if (!isMutedRef.current && sample.channels.length > 0) {
+        // Convert audio sample to base64 for real-time streaming
+        const frames = sample.channels[0].frames;
+        
+        // Convert float frames (-1 to 1) to 16-bit PCM
+        const int16Array = new Int16Array(frames.length);
+        for (let i = 0; i < frames.length; i++) {
+          int16Array[i] = Math.max(-32768, Math.min(32767, frames[i] * 32767));
+        }
+        
+        // Convert to base64
+        const uint8Array = new Uint8Array(int16Array.buffer);
+        let binary = '';
+        for (let i = 0; i < uint8Array.length; i++) {
+          binary += String.fromCharCode(uint8Array[i]);
+        }
+        const base64Audio = btoa(binary);
+        
+        console.log('Sending real-time audio sample, frames:', frames.length, 'base64 length:', base64Audio.length);
+        onAudioRecorded(base64Audio);
+      }
+    });
+  }
 
   const mute = useCallback(() => {
     try {
@@ -136,8 +176,8 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
           return false;
         }
       } else {
-        // For mobile platforms, use expo-av
-        const permission = await Audio.requestPermissionsAsync();
+        // For mobile platforms, use expo-audio
+        const permission = await AudioModule.requestRecordingPermissionsAsync();
         console.log('Permission response:', permission);
         
         if (permission.status === 'granted') {
@@ -242,63 +282,16 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
         audioRecorderRef.current = recorder;
         
       } else {
-        // Mobile implementation using Expo Audio
-        console.log('Starting mobile recording...');
+        // Mobile implementation using expo-audio for real-time streaming
+        console.log('Starting mobile recording with expo-audio...');
         
-        // Stop any existing recording
-        if (recordingRef.current) {
-          await recordingRef.current.stopAndUnloadAsync();
+        if (expoRecorder) {
+          await expoRecorder.prepareToRecordAsync();
+          expoRecorder.record();
+          console.log('expo-audio recording started - real-time samples will be streamed');
+        } else {
+          throw new Error('expo-audio recorder not available');
         }
-
-        // Create new recording
-        const recording = new Audio.Recording();
-        
-        // Configure recording options
-        const recordingOptions = {
-          android: {
-            extension: '.wav',
-            outputFormat: Audio.AndroidOutputFormat.DEFAULT,
-            audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
-            sampleRate: 16000,
-            numberOfChannels: 1,
-            bitRate: 128000,
-          },
-          ios: {
-            extension: '.wav',
-            outputFormat: Audio.IOSOutputFormat.LINEARPCM,
-            audioQuality: Audio.IOSAudioQuality.HIGH,
-            sampleRate: 16000,
-            numberOfChannels: 1,
-            bitRate: 128000,
-            linearPCMBitDepth: 16,
-            linearPCMIsBigEndian: false,
-            linearPCMIsFloat: false,
-          },
-        };
-
-        await recording.prepareToRecordAsync(recordingOptions);
-        await recording.startAsync();
-        
-        recordingRef.current = recording;
-        
-        // Set up periodic audio chunk sending for real-time streaming
-        const sendAudioChunks = setInterval(async () => {
-          try {
-            if (recordingRef.current && !isMutedRef.current) {
-              const status = await recordingRef.current.getStatusAsync();
-              if (status.isRecording) {
-                // For real-time streaming, we'd need to get audio data chunks
-                // This is a limitation of expo-av - it doesn't support real-time streaming
-                console.log('Recording in progress, duration:', status.durationMillis);
-              }
-            }
-          } catch (error) {
-            console.log('Error checking recording status:', error);
-          }
-        }, 1000);
-        
-        // Store interval reference for cleanup
-        (recording as any)._audioInterval = sendAudioChunks;
       }
       
       setIsRecording(true);
@@ -338,41 +331,14 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
           }
         }
       } else {
-        // Mobile implementation
-        if (!recordingRef.current) {
-          console.log('No mobile recording to stop');
-          return;
+        // Mobile implementation using expo-audio
+        if (expoRecorder && recorderState?.isRecording) {
+          await expoRecorder.stop();
+          console.log('expo-audio recording stopped');
+          console.log('Final recording URI:', expoRecorder.uri);
+        } else {
+          console.log('No expo-audio recording to stop');
         }
-
-        // Clear any audio streaming interval
-        if ((recordingRef.current as any)?._audioInterval) {
-          clearInterval((recordingRef.current as any)._audioInterval);
-        }
-        
-        await recordingRef.current.stopAndUnloadAsync();
-        const uri = recordingRef.current.getURI();
-        
-        if (uri) {
-          console.log('Recording saved to:', uri);
-          
-          // Convert audio file to base64 for WebSocket transmission
-          try {
-            const base64Audio = await FileSystem.readAsStringAsync(uri, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-            
-            console.log('Audio converted to base64, length:', base64Audio.length);
-            onAudioRecorded(base64Audio);
-          } catch (error) {
-            console.error('Error converting audio to base64:', error);
-            // For expo-av limitation, we can't do real-time streaming
-            // The audio file is created but we can't easily convert it
-            console.log('Audio recording completed but real-time streaming not available in Expo Go');
-            console.log('For full functionality, use a development build or production APK');
-          }
-        }
-        
-        recordingRef.current = null;
       }
       
       setIsRecording(false);
@@ -400,6 +366,10 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
         });
         streamRef.current = null;
         console.log('Microphone stream force released');
+      } else if (Platform.OS !== 'web' && expoRecorder && recorderState?.isRecording) {
+        // Stop expo-audio recording
+        await expoRecorder.stop();
+        console.log('expo-audio recording force stopped');
       }
       
       // Reset states
@@ -409,7 +379,7 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
     } catch (error) {
       console.error('Error during audio recorder cleanup:', error);
     }
-  }, [isRecording, stop]);
+  }, [isRecording, stop, expoRecorder, recorderState]);
 
   return {
     start,
