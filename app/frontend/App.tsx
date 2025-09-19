@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView, Platform, Alert } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, Platform, Alert, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -401,32 +401,21 @@ export default function App() {
           </Button>
           {isRecording && (
             <View style={{ marginTop: 12 }}>
-              <Button
+              <TouchableOpacity
                 onPress={toggleMuteMic}
                 style={[
-                  styles.mainButton,
-                  isMuted ? styles.stopButton : styles.startButton
+                  styles.iconButton,
+                  isMuted ? styles.muteButtonActive : styles.muteButton
                 ]}
-                textStyle={[
-                  styles.buttonText,
-                  isMuted ? styles.stopButtonText : styles.startButtonText
-                ]}
+                activeOpacity={0.8}
+                accessibilityLabel={isMuted ? 'Unmute Mic' : 'Mute Mic'}
               >
-                <View style={styles.buttonContent}>
-                  <MaterialIcons
-                    name={isMuted ? 'mic-off' : 'mic-none'}
-                    size={24}
-                    color={isMuted ? '#ffffff' : '#000000'}
-                    style={styles.buttonIcon}
-                  />
-                  <Text style={[
-                    styles.buttonText,
-                    isMuted ? styles.stopButtonText : styles.startButtonText
-                  ]}>
-                    {isMuted ? 'Unmute Mic' : 'Mute Mic'}
-                  </Text>
-                </View>
-              </Button>
+                <MaterialIcons
+                  name={isMuted ? 'mic-off' : 'mic-none'}
+                  size={22}
+                  color={isMuted ? '#111111' : '#111111'}
+                />
+              </TouchableOpacity>
             </View>
           )}
           
@@ -631,6 +620,24 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minWidth: 40,
     minHeight: 40,
+  },
+  iconButton: {
+    backgroundColor: '#e5e7eb',
+    borderColor: '#d1d5db',
+    borderWidth: 1,
+    borderRadius: 10,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  muteButton: {
+    backgroundColor: '#e5e7eb', // gray-200
+    borderColor: '#d1d5db',     // gray-300
+  },
+  muteButtonActive: {
+    backgroundColor: '#9ca3af', // gray-400
+    borderColor: '#6b7280',     // gray-500
   },
   footer: {
     paddingVertical: 24,
