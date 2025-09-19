@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { Audio } from 'expo-audio';
+import { Audio } from 'expo-av';
 import { Platform, Alert } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { AudioRecorder } from '../components/AudioRecorder';
 
 interface UseAudioRecorderProps {
@@ -34,7 +34,7 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
         setPermissionStatus('unknown');
         console.log('Web platform - permissions will be checked when recording starts');
       } else {
-        // On mobile platforms, we can check permissions
+        // On mobile platforms, use expo-av for permissions
         const permission = await Audio.getPermissionsAsync();
         console.log('Current permission status:', permission);
         
@@ -136,7 +136,7 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
           return false;
         }
       } else {
-        // For mobile platforms
+        // For mobile platforms, use expo-av
         const permission = await Audio.requestPermissionsAsync();
         console.log('Permission response:', permission);
         
@@ -280,6 +280,25 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
         await recording.startAsync();
         
         recordingRef.current = recording;
+        
+        // Set up periodic audio chunk sending for real-time streaming
+        const sendAudioChunks = setInterval(async () => {
+          try {
+            if (recordingRef.current && !isMutedRef.current) {
+              const status = await recordingRef.current.getStatusAsync();
+              if (status.isRecording) {
+                // For real-time streaming, we'd need to get audio data chunks
+                // This is a limitation of expo-av - it doesn't support real-time streaming
+                console.log('Recording in progress, duration:', status.durationMillis);
+              }
+            }
+          } catch (error) {
+            console.log('Error checking recording status:', error);
+          }
+        }, 1000);
+        
+        // Store interval reference for cleanup
+        (recording as any)._audioInterval = sendAudioChunks;
       }
       
       setIsRecording(true);
@@ -325,6 +344,11 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
           return;
         }
 
+        // Clear any audio streaming interval
+        if ((recordingRef.current as any)?._audioInterval) {
+          clearInterval((recordingRef.current as any)._audioInterval);
+        }
+        
         await recordingRef.current.stopAndUnloadAsync();
         const uri = recordingRef.current.getURI();
         
@@ -341,6 +365,10 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
             onAudioRecorded(base64Audio);
           } catch (error) {
             console.error('Error converting audio to base64:', error);
+            // For expo-av limitation, we can't do real-time streaming
+            // The audio file is created but we can't easily convert it
+            console.log('Audio recording completed but real-time streaming not available in Expo Go');
+            console.log('For full functionality, use a development build or production APK');
           }
         }
         

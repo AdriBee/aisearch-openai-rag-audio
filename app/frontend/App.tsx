@@ -19,6 +19,7 @@ import useAudioPlayer from './src/hooks/useAudioPlayer';
 
 // Import i18n configuration
 import './src/locales/i18n';
+import { storage } from './src/lib/storage';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,24 +34,20 @@ export default function App() {
 
   // Check authentication on app load
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const authStatus = localStorage.getItem('schoolme_authenticated');
-      const authTime = localStorage.getItem('schoolme_auth_time');
-      
+    (async () => {
+      const authStatus = await storage.getItem('schoolme_authenticated');
+      const authTime = await storage.getItem('schoolme_auth_time');
       if (authStatus === 'true' && authTime) {
-        // Check if authentication is still valid (24 hours)
         const authAge = Date.now() - parseInt(authTime);
-        const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-        
+        const maxAge = 24 * 60 * 60 * 1000;
         if (authAge < maxAge) {
           setIsAuthenticated(true);
         } else {
-          // Clear expired authentication
-          localStorage.removeItem('schoolme_authenticated');
-          localStorage.removeItem('schoolme_auth_time');
+          await storage.removeItem('schoolme_authenticated');
+          await storage.removeItem('schoolme_auth_time');
         }
       }
-    }
+    })();
   }, []);
 
   const handleLogin = () => {
@@ -85,10 +82,8 @@ export default function App() {
       
     } finally {
       // Clear authentication after session is ended
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('schoolme_authenticated');
-        localStorage.removeItem('schoolme_auth_time');
-      }
+      await storage.removeItem('schoolme_authenticated');
+      await storage.removeItem('schoolme_auth_time');
       setIsAuthenticated(false);
 
       // Reset app state

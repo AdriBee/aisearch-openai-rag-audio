@@ -24,8 +24,8 @@ fi
 echo ""
 echo "Starting backend"
 echo ""
-cd ../../
-./.venv/bin/python app/backend/app.py
+cd ../backend
+./.venv/bin/python app.py
 if [ $? -ne 0 ]; then
     echo "Failed to start backend"
     exit $?

@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
+import { Platform } from 'react-native';
+import { getWsUrl } from '../lib/config';
 import { 
   SessionUpdateCommand, 
   InputAudioBufferAppendCommand, 
@@ -25,24 +27,7 @@ export const useRealtime = (props: UseRealtimeProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const websocketRef = useRef<WebSocket | null>(null);
   
-  // WebSocket URL - use relative path for production, localhost for development
-  const getWebSocketUrl = () => {
-    if (typeof window !== 'undefined') {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      
-      // If running on localhost, use the development backend
-      if (host.includes('localhost') || host.includes('127.0.0.1')) {
-        return 'ws://localhost:8765/realtime';
-      }
-      
-      // For production (Azure), use relative WebSocket URL
-      return `${protocol}//${host}/realtime`;
-    }
-    
-    // Fallback for non-browser environments
-    return 'ws://localhost:8765/realtime';
-  };
+  const getWebSocketUrl = () => getWsUrl();
   
   const BACKEND_URL = getWebSocketUrl();
 
@@ -55,7 +40,7 @@ export const useRealtime = (props: UseRealtimeProps) => {
     try {
       const wsUrl = getWebSocketUrl();
       console.log('Connecting to WebSocket:', wsUrl);
-      console.log('Current location:', typeof window !== 'undefined' ? window.location.href : 'server-side');
+      console.log('Current platform:', Platform.OS);
       const ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {

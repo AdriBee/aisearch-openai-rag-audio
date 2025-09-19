@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform, Alert, KeyboardAvoidingView, ScrollView, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Button } from './Button';
+import { storage } from '../lib/storage';
+import { getApiBaseUrl } from '../lib/config';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -22,23 +24,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
     try {
       // Get the API endpoint based on environment
-      const getApiUrl = () => {
-        if (typeof window !== 'undefined') {
-          const protocol = window.location.protocol;
-          const host = window.location.host;
-          
-          // If running on localhost, use the development backend
-          if (host.includes('localhost') || host.includes('127.0.0.1')) {
-            return 'http://localhost:8765/api/auth';
-          }
-          
-          // For production (Azure), use relative URL
-          return `${protocol}//${host}/api/auth`;
-        }
-        
-        // Fallback for non-browser environments
-        return 'http://localhost:8765/api/auth';
-      };
+      const getApiUrl = () => `${getApiBaseUrl()}/api/auth`;
 
       const response = await fetch(getApiUrl(), {
         method: 'POST',
@@ -51,11 +37,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       const data = await response.json();
 
       if (data.success) {
-        // Store authentication in localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('schoolme_authenticated', 'true');
-          localStorage.setItem('schoolme_auth_time', Date.now().toString());
-        }
+        await storage.setItem('schoolme_authenticated', 'true');
+        await storage.setItem('schoolme_auth_time', Date.now().toString());
         onLogin();
       } else {
         Alert.alert('Access Denied', data.message || 'Invalid password');
@@ -69,8 +52,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Logo/Title */}
         <View style={styles.header}>
           <MaterialIcons name="school" size={80} color="#ffffff" />
@@ -97,16 +80,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               autoCorrect={false}
               onSubmitEditing={handleLogin}
             />
-            <Button
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeButton}
-            >
-              <MaterialIcons 
-                name={showPassword ? 'visibility-off' : 'visibility'} 
-                size={24} 
-                color="#9ca3af" 
-              />
-            </Button>
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton} activeOpacity={0.7}>
+              <MaterialIcons name={showPassword ? 'visibility-off' : 'visibility'} size={24} color="#9ca3af" />
+            </TouchableOpacity>
           </View>
 
           <Button
@@ -135,8 +111,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             This application is protected to ensure secure access
           </Text>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -149,42 +125,44 @@ const styles = StyleSheet.create({
   },
   content: {
     width: '100%',
-    maxWidth: 400,
-    paddingHorizontal: 32,
+    maxWidth: 420,
+    paddingHorizontal: 24,
     alignItems: 'center',
+    paddingTop: 48,
+    paddingBottom: 32,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 32,
   },
   title: {
-    fontSize: Platform.OS === 'web' ? 48 : 36,
+    fontSize: Platform.OS === 'web' ? 48 : 32,
     fontWeight: 'bold',
     color: '#ffffff',
     marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#9ca3af',
     textAlign: 'center',
   },
   loginForm: {
     width: '100%',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   loginTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#ffffff',
     textAlign: 'center',
     marginBottom: 8,
   },
   loginSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#9ca3af',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -193,16 +171,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#374151',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   passwordInput: {
     flex: 1,
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     fontSize: 16,
     color: '#ffffff',
   },
   eyeButton: {
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     backgroundColor: 'transparent',
     borderRadius: 0,
   },
@@ -210,8 +190,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderColor: '#ffffff',
     borderWidth: 2,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 12,
+    minHeight: 48,
   },
   loginButtonDisabled: {
     backgroundColor: '#6b7280',
