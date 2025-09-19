@@ -1,9 +1,30 @@
 # Backend
 **/*.pyc
 **/.env
+**/__pycache__
+**/.venv
+**/venv
 
 ## Will be built by multistage docker build
 **/static
 
 # Frontend
 **/node_modules
+**/android
+**/ios
+**/temp-project
+**/.expo
+**/build
+**/dist
+
+# Development files
+**/.DS_Store
+**/*.log
+**/.git
+**/coverage
+**/.nyc_output
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.vscode
+**/.idea

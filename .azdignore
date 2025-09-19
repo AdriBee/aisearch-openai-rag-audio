@@ -1,0 +1,25 @@
+# Exclude large directories and files from azd deployment
+app/frontend/node_modules/
+app/frontend-old/node_modules/
+app/frontend/android/
+app/frontend/ios/
+app/frontend/temp-project/
+app/frontend/.expo/
+app/frontend/build/
+app/frontend/dist/
+
+# Development files
+.DS_Store
+*.log
+.git/
+coverage/
+.nyc_output/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/
+.idea/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
