@@ -9,6 +9,7 @@ import StatusMessage from './src/components/StatusMessage';
 import GroundingFiles from './src/components/GroundingFiles';
 import GroundingFileView from './src/components/GroundingFileView';
 import ChatTranscript from './src/components/ChatTranscript';
+import LoginScreen from './src/components/LoginScreen';
 import { GroundingFile, ToolResult, ChatMessage } from './src/types';
 
 // Import hooks
@@ -20,6 +21,7 @@ import useAudioPlayer from './src/hooks/useAudioPlayer';
 import './src/locales/i18n';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [groundingFiles, setGroundingFiles] = useState<GroundingFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<GroundingFile | null>(null);
@@ -28,6 +30,52 @@ export default function App() {
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<string>('');
   
   const { t } = useTranslation();
+
+  // Check authentication on app load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const authStatus = localStorage.getItem('schoolme_authenticated');
+      const authTime = localStorage.getItem('schoolme_auth_time');
+      
+      if (authStatus === 'true' && authTime) {
+        // Check if authentication is still valid (24 hours)
+        const authAge = Date.now() - parseInt(authTime);
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        
+        if (authAge < maxAge) {
+          setIsAuthenticated(true);
+        } else {
+          // Clear expired authentication
+          localStorage.removeItem('schoolme_authenticated');
+          localStorage.removeItem('schoolme_auth_time');
+        }
+      }
+    }
+  }, []);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    // Clear authentication
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('schoolme_authenticated');
+      localStorage.removeItem('schoolme_auth_time');
+    }
+    setIsAuthenticated(false);
+    
+    // Reset app state
+    setIsRecording(false);
+    setGroundingFiles([]);
+    setSelectedFile(null);
+    setChatMessages([]);
+    setCurrentUserMessage('');
+    setCurrentAssistantMessage('');
+    
+    // Close any active connections
+    forceDisconnect();
+  };
 
   // Initialize hooks - order matters for dependencies
   const { reset: resetAudioPlayer, play: playAudio, stop: stopAudioPlayer } = useAudioPlayer();
@@ -247,6 +295,11 @@ export default function App() {
     }
   }, [hasPermission]);
 
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
@@ -254,11 +307,19 @@ export default function App() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.brandText}>SchoolMe</Text>
-        {/* Connection indicator */}
-        <View style={[styles.connectionIndicator, isConnected ? styles.connected : styles.disconnected]}>
-          <Text style={styles.connectionText}>
-            {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
-          </Text>
+        
+        <View style={styles.headerRight}>
+          {/* Connection indicator */}
+          <View style={[styles.connectionIndicator, isConnected ? styles.connected : styles.disconnected]}>
+            <Text style={styles.connectionText}>
+              {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+            </Text>
+          </View>
+          
+          {/* Logout button */}
+          <Button onPress={handleLogout} style={styles.logoutButton}>
+            <MaterialIcons name="logout" size={20} color="#ffffff" />
+          </Button>
         </View>
       </View>
 
@@ -379,6 +440,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   brandText: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -494,6 +560,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     maxHeight: 120, // Limit height to prevent taking too much space
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: '#ef4444',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    minWidth: 40,
+    minHeight: 40,
   },
   footer: {
     paddingVertical: 24,

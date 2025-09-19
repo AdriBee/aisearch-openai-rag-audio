@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from aiohttp import web
+from aiohttp_cors import setup as cors_setup, ResourceOptions
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import AzureDeveloperCliCredential, DefaultAzureCredential
 from dotenv import load_dotenv
@@ -63,6 +64,44 @@ async def create_app():
         )
 
     rtmt.attach_to_app(app, "/realtime")
+
+    # Password authentication endpoint
+    async def check_password(request):
+        try:
+            data = await request.json()
+            provided_password = data.get("password", "")
+            correct_password = os.environ.get("ENTRY_PASSWORD", "")
+            
+            if not correct_password:
+                logger.warning("ENTRY_PASSWORD not set in environment variables")
+                return web.json_response({"success": False, "message": "Server configuration error"}, status=500)
+            
+            if provided_password == correct_password:
+                logger.info("Successful password authentication")
+                return web.json_response({"success": True})
+            else:
+                logger.warning("Failed password authentication attempt")
+                return web.json_response({"success": False, "message": "Invalid password"}, status=401)
+                
+        except Exception as e:
+            logger.error(f"Error in password check: {e}")
+            return web.json_response({"success": False, "message": "Server error"}, status=500)
+
+    app.router.add_post("/api/auth", check_password)
+
+    # Configure CORS
+    cors = cors_setup(app, defaults={
+        "*": ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*",
+            allow_methods="*"
+        )
+    })
+
+    # Add CORS to all routes
+    for route in list(app.router.routes()):
+        cors.add(route)
 
     current_directory = Path(__file__).parent
     app.add_routes([web.get('/', lambda _: web.FileResponse(current_directory / 'static/index.html'))])
