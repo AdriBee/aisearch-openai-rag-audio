@@ -109,6 +109,7 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
     }
   }, [mute, unmute]);
 
+
   const requestPermissions = useCallback(async () => {
     try {
       console.log('Requesting audio permissions...');
@@ -303,6 +304,20 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
         } else {
           console.log('No web recording to stop');
         }
+        
+        // Always stop and release the microphone stream
+        if (streamRef.current) {
+          try {
+            streamRef.current.getTracks().forEach(track => {
+              track.stop();
+              console.log('Stopped microphone track:', track.kind);
+            });
+            streamRef.current = null;
+            console.log('Microphone stream released');
+          } catch (e) {
+            console.error('Error stopping media tracks:', e);
+          }
+        }
       } else {
         // Mobile implementation
         if (!recordingRef.current) {
@@ -340,9 +355,38 @@ export const useAudioRecorder = ({ onAudioRecorded }: UseAudioRecorderProps) => 
     }
   }, [onAudioRecorded]);
 
+  const cleanup = useCallback(async () => {
+    try {
+      console.log('Cleaning up audio recorder...');
+      
+      // Stop recording if active
+      if (isRecording) {
+        await stop();
+      }
+      
+      // Force release microphone stream on web
+      if (Platform.OS === 'web' && streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log('Force stopped microphone track:', track.kind);
+        });
+        streamRef.current = null;
+        console.log('Microphone stream force released');
+      }
+      
+      // Reset states
+      setIsRecording(false);
+      setIsMuted(false);
+      
+    } catch (error) {
+      console.error('Error during audio recorder cleanup:', error);
+    }
+  }, [isRecording, stop]);
+
   return {
     start,
     stop,
+    cleanup,
     mute,
     unmute,
     toggleMute,

@@ -57,24 +57,50 @@ export default function App() {
     setIsAuthenticated(true);
   };
 
-  const handleLogout = () => {
-    // Clear authentication
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('schoolme_authenticated');
-      localStorage.removeItem('schoolme_auth_time');
+  const handleLogout = async () => {
+    // End the active session cleanly first
+    try {
+      console.log('Logging out - cleaning up active session...');
+      
+      // Clean up audio recording and release microphone
+      try {
+        await cleanupAudioRecorder();
+      } catch (e) {
+        console.log('Error cleaning up audio during logout:', e);
+      }
+      
+      // Stop any audio playback
+      try {
+        stopAudioPlayer();
+      } catch (e) {
+        console.log('Error stopping audio player during logout:', e);
+      }
+      
+      // Disconnect realtime socket
+      try {
+        forceDisconnect();
+      } catch (e) {
+        console.log('Error force disconnecting during logout:', e);
+      }
+      
+    } finally {
+      // Clear authentication after session is ended
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('schoolme_authenticated');
+        localStorage.removeItem('schoolme_auth_time');
+      }
+      setIsAuthenticated(false);
+
+      // Reset app state
+      setIsRecording(false);
+      setGroundingFiles([]);
+      setSelectedFile(null);
+      setChatMessages([]);
+      setCurrentUserMessage('');
+      setCurrentAssistantMessage('');
+      
+      console.log('Logout complete - microphone released and session ended');
     }
-    setIsAuthenticated(false);
-    
-    // Reset app state
-    setIsRecording(false);
-    setGroundingFiles([]);
-    setSelectedFile(null);
-    setChatMessages([]);
-    setCurrentUserMessage('');
-    setCurrentAssistantMessage('');
-    
-    // Close any active connections
-    forceDisconnect();
   };
 
   // Initialize hooks - order matters for dependencies
@@ -193,6 +219,7 @@ export default function App() {
   const { 
     start: startAudioRecording, 
     stop: stopAudioRecording, 
+    cleanup: cleanupAudioRecorder,
     mute: muteMic,
     unmute: unmuteMic,
     toggleMute: toggleMuteMic,
@@ -255,8 +282,8 @@ export default function App() {
         // Immediately stop everything
         setIsRecording(false);
         
-        // Stop audio recording
-        await stopAudioRecording();
+        // Clean up audio recording and release microphone
+        await cleanupAudioRecorder();
         
         // Stop audio player immediately
         stopAudioPlayer();
@@ -271,7 +298,7 @@ export default function App() {
         setCurrentUserMessage('');
         setCurrentAssistantMessage('');
         
-        console.log('Recording session stopped and conversation ended');
+        console.log('Recording session stopped, microphone released, and conversation ended');
       }
     } catch (error) {
       console.error('Error toggling recording:', error);
