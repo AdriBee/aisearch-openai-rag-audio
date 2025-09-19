@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Platform, Dimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { GroundingFile as GroundingFileType } from '../types';
 import GroundingFile from './GroundingFile';
@@ -11,10 +11,22 @@ interface GroundingFilesProps {
 
 const GroundingFiles: React.FC<GroundingFilesProps> = ({ files, onFileSelected }) => {
   const { t } = useTranslation();
+  const [screenData, setScreenData] = useState(Dimensions.get('window'));
+  const isMobile = screenData.width < 768;
+
+  useEffect(() => {
+    const onChange = (result: any) => {
+      setScreenData(result.window);
+    };
+    const subscription = Dimensions.addEventListener('change', onChange);
+    return () => subscription?.remove();
+  }, []);
 
   if (files.length === 0) {
     return null;
   }
+
+  const styles = createStyles(isMobile);
 
   return (
     <View style={styles.container}>
@@ -40,31 +52,32 @@ const GroundingFiles: React.FC<GroundingFilesProps> = ({ files, onFileSelected }
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (isMobile: boolean) => StyleSheet.create({
   container: {
     backgroundColor: '#1f2937',
     borderWidth: 1,
     borderColor: '#374151',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: isMobile ? 8 : 12,
+    padding: isMobile ? 8 : 16,
     width: '100%',
   },
   header: {
-    marginBottom: 12,
+    marginBottom: isMobile ? 6 : 12,
   },
   title: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: isMobile ? 12 : 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: isMobile ? 2 : 4,
   },
   description: {
     color: '#9ca3af',
-    fontSize: 14,
+    fontSize: isMobile ? 10 : 14,
+    display: isMobile ? 'none' : 'flex', // Hide description on mobile
   },
   filesContainer: {
     flexDirection: 'row',
-    paddingVertical: 4,
+    paddingVertical: isMobile ? 2 : 4,
   },
 });
 

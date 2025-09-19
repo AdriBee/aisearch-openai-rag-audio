@@ -3,9 +3,46 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="description" content="SchoolMe - Your AI-powered learning companion for interactive education through voice conversation" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SchoolMe" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <title>SchoolMe - AI Learning Assistant</title>
+    <style>
+      /* Prevent zoom on focus for iOS */
+      input[type="text"], input[type="email"], input[type="password"], textarea, select {
+        font-size: 16px !important;
+      }
+      
+      /* Smooth scrolling for mobile */
+      html {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+      }
+      
+      /* Prevent pull-to-refresh and optimize for mobile */
+      body {
+        overscroll-behavior: none;
+        touch-action: pan-x pan-y;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      
+      /* Allow text selection in content areas */
+      pre, code, p, span {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      
+      /* Optimize rendering for mobile devices */
+      * {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+      }
+    </style>
   </head>
   <body class="dark">
     <div id="root"></div>

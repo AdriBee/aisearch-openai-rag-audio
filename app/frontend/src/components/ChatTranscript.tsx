@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, Dimensions } from 'react-native';
 
 export interface ChatMessage {
   id: string;
@@ -15,6 +15,8 @@ interface ChatTranscriptProps {
 
 const ChatTranscript: React.FC<ChatTranscriptProps> = ({ messages, isVisible }) => {
   const scrollViewRef = useRef<ScrollView>(null);
+  const [screenData, setScreenData] = useState(Dimensions.get('window'));
+  const isMobile = screenData.width < 768;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -23,9 +25,20 @@ const ChatTranscript: React.FC<ChatTranscriptProps> = ({ messages, isVisible }) 
     }
   }, [messages]);
 
+  // Listen for screen size changes
+  useEffect(() => {
+    const onChange = (result: any) => {
+      setScreenData(result.window);
+    };
+    const subscription = Dimensions.addEventListener('change', onChange);
+    return () => subscription?.remove();
+  }, []);
+
   if (!isVisible || messages.length === 0) {
     return null;
   }
+
+  const styles = createStyles(isMobile);
 
   return (
     <View style={styles.container}>
@@ -68,44 +81,44 @@ const ChatTranscript: React.FC<ChatTranscriptProps> = ({ messages, isVisible }) 
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (isMobile: boolean) => StyleSheet.create({
   container: {
     backgroundColor: '#111111',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    minHeight: 200,
-    maxHeight: 400,
+    borderRadius: isMobile ? 8 : 12,
+    marginHorizontal: isMobile ? 8 : 16,
+    marginVertical: isMobile ? 4 : 8,
+    minHeight: isMobile ? 150 : 200,
+    maxHeight: isMobile ? 300 : 400,
     borderWidth: 1,
     borderColor: '#333333',
-    width: '90%',
+    width: isMobile ? '96%' : '90%',
     alignSelf: 'center',
     flex: 0, // Don't take up all available space
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: isMobile ? 8 : 16,
+    paddingVertical: isMobile ? 6 : 12,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
   },
   headerText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: isMobile ? 12 : 16,
     fontWeight: '600',
   },
   messagesContainer: {
     flex: 1,
   },
   messagesContent: {
-    padding: 16,
+    padding: isMobile ? 8 : 16,
   },
   messageContainer: {
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 8,
+    marginBottom: isMobile ? 8 : 16,
+    padding: isMobile ? 8 : 12,
+    borderRadius: isMobile ? 12 : 8,
   },
   userMessage: {
-    backgroundColor: '#1f2937',
+    backgroundColor: '#2563eb',
     alignSelf: 'flex-end',
     maxWidth: '85%',
   },
@@ -118,21 +131,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: isMobile ? 4 : 8,
   },
   roleName: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: isMobile ? 10 : 14,
     fontWeight: '600',
   },
   timestamp: {
     color: '#9ca3af',
-    fontSize: 12,
+    fontSize: isMobile ? 8 : 12,
   },
   messageContent: {
     color: '#e5e7eb',
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: isMobile ? 12 : 15,
+    lineHeight: isMobile ? 16 : 20,
   },
 });
 

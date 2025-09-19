@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Platform, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { GroundingFile } from '../types';
 
@@ -9,15 +9,28 @@ interface GroundingFileViewProps {
 }
 
 const GroundingFileView: React.FC<GroundingFileViewProps> = ({ file, onClose }) => {
+  const [screenData, setScreenData] = useState(Dimensions.get('window'));
+  const isMobile = screenData.width < 768;
+
+  useEffect(() => {
+    const onChange = (result: any) => {
+      setScreenData(result.window);
+    };
+    const subscription = Dimensions.addEventListener('change', onChange);
+    return () => subscription?.remove();
+  }, []);
+
   if (!file) {
     return null;
   }
+
+  const styles = createStyles(isMobile);
 
   return (
     <Modal
       visible={!!file}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle={isMobile ? "fullScreen" : "pageSheet"}
       onRequestClose={onClose}
     >
       <View style={styles.container}>
@@ -30,7 +43,7 @@ const GroundingFileView: React.FC<GroundingFileViewProps> = ({ file, onClose }) 
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="close" size={24} color="#ffffff" />
+            <MaterialIcons name="close" size={isMobile ? 20 : 24} color="#ffffff" />
           </TouchableOpacity>
         </View>
         
@@ -46,43 +59,50 @@ const GroundingFileView: React.FC<GroundingFileViewProps> = ({ file, onClose }) 
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (isMobile: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingTop: isMobile ? (Platform.OS === 'web' ? 0 : 20) : (Platform.OS === 'ios' ? 50 : 20),
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: isMobile ? 12 : 20,
+    paddingVertical: isMobile ? 12 : 16,
     borderBottomWidth: 1,
     borderBottomColor: '#374151',
+    backgroundColor: '#000000',
+    minHeight: isMobile ? 60 : 70,
   },
   title: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: isMobile ? 14 : 18,
     fontWeight: 'bold',
     flex: 1,
-    marginRight: 16,
+    marginRight: isMobile ? 8 : 16,
   },
   closeButton: {
-    padding: 8,
+    padding: isMobile ? 12 : 8,
     backgroundColor: '#374151',
     borderRadius: 20,
+    minWidth: isMobile ? 44 : 40,
+    minHeight: isMobile ? 44 : 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   contentContainer: {
     flex: 1,
+    backgroundColor: '#111111',
   },
   textContainer: {
-    padding: 20,
+    padding: isMobile ? 12 : 20,
   },
   content: {
     color: '#ffffff',
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: isMobile ? 12 : 16,
+    lineHeight: isMobile ? 18 : 24,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 });

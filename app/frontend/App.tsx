@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView, Platform, Alert, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, Platform, Alert, TouchableOpacity, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +28,18 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<string>('');
+  
+  // Responsive design - detect mobile vs desktop
+  const [screenData, setScreenData] = useState(Dimensions.get('window'));
+  const isMobile = screenData.width < 768; // Mobile breakpoint
+  
+  useEffect(() => {
+    const onChange = (result: any) => {
+      setScreenData(result.window);
+    };
+    const subscription = Dimensions.addEventListener('change', onChange);
+    return () => subscription?.remove();
+  }, []);
   
   const { t } = useTranslation();
 
@@ -331,6 +343,9 @@ export default function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
+  // Get responsive styles
+  const styles = createStyles(isMobile);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
@@ -477,32 +492,35 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
+// Dynamic styles based on screen size
+const createStyles = (isMobile: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 0,
-    paddingBottom: 16,
+    paddingHorizontal: isMobile ? 8 : 16,
+    paddingTop: isMobile ? 8 : (Platform.OS === 'web' ? 16 : 0),
+    paddingBottom: isMobile ? 8 : 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomWidth: isMobile ? 1 : 0,
+    borderBottomColor: '#374151',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: isMobile ? 8 : 12,
   },
   brandText: {
-    fontSize: 20,
+    fontSize: isMobile ? 14 : 20,
     fontWeight: 'bold',
     color: '#ffffff',
   },
   connectionIndicator: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: isMobile ? 4 : 8,
+    paddingVertical: isMobile ? 2 : 4,
     borderRadius: 12,
   },
   connected: {
@@ -512,55 +530,59 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.2)',
   },
   connectionText: {
-    fontSize: 12,
+    fontSize: isMobile ? 10 : 12,
     color: '#ffffff',
   },
   mainContent: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: isMobile ? 'flex-start' : 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: isMobile ? 8 : 16,
   },
   mainContentWithChat: {
     justifyContent: 'flex-start',
-    paddingTop: 20,
+    paddingTop: isMobile ? 8 : 20,
   },
   titleContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: isMobile ? 24 : 32,
+    marginTop: isMobile ? 32 : 0,
   },
   compactTitleContainer: {
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: isMobile ? 16 : 16,
+    marginTop: isMobile ? 24 : 8,
   },
   title: {
-    fontSize: Platform.OS === 'web' ? 72 : 48,
+    fontSize: isMobile ? 24 : (Platform.OS === 'web' ? 72 : 48),
     fontWeight: 'bold',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: isMobile ? 8 : 16,
   },
   compactTitle: {
-    fontSize: Platform.OS === 'web' ? 32 : 24,
+    fontSize: isMobile ? 16 : (Platform.OS === 'web' ? 32 : 24),
     fontWeight: 'bold',
     color: '#ffffff',
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: Platform.OS === 'web' ? 20 : 18,
+    fontSize: isMobile ? 12 : (Platform.OS === 'web' ? 20 : 18),
     color: '#d1d5db',
     textAlign: 'center',
-    maxWidth: Platform.OS === 'web' ? 512 : 300,
-    lineHeight: Platform.OS === 'web' ? 28 : 24,
+    maxWidth: isMobile ? 280 : (Platform.OS === 'web' ? 512 : 300),
+    lineHeight: isMobile ? 16 : (Platform.OS === 'web' ? 28 : 24),
+    display: isMobile ? 'none' : 'flex',
   },
   buttonContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: isMobile ? 8 : 32,
   },
   mainButton: {
     borderWidth: 2,
     transform: [{ scale: 1 }],
+    minWidth: isMobile ? 120 : 200,
+    height: isMobile ? 32 : 56,
   },
   startButton: {
     backgroundColor: '#ffffff',
@@ -576,10 +598,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonIcon: {
-    marginRight: 12,
+    marginRight: isMobile ? 4 : 12,
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: isMobile ? 12 : 18,
     fontWeight: '600',
   },
   startButtonText: {
@@ -590,61 +612,62 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     color: '#fbbf24',
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: isMobile ? 10 : 14,
+    marginTop: isMobile ? 4 : 8,
     textAlign: 'center',
   },
   permissionGrantedText: {
     color: '#10b981',
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: isMobile ? 10 : 14,
+    marginTop: isMobile ? 4 : 8,
     textAlign: 'center',
   },
   groundingText: {
     color: '#10b981',
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: isMobile ? 10 : 14,
+    marginTop: isMobile ? 4 : 8,
     textAlign: 'center',
   },
   groundingSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    maxHeight: 120, // Limit height to prevent taking too much space
+    paddingHorizontal: isMobile ? 8 : 16,
+    paddingBottom: isMobile ? 8 : 16,
+    maxHeight: isMobile ? 80 : 120,
   },
   logoutButton: {
     backgroundColor: 'rgba(239, 68, 68, 0.2)',
     borderColor: '#ef4444',
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    minWidth: 40,
-    minHeight: 40,
+    paddingHorizontal: isMobile ? 4 : 8,
+    paddingVertical: isMobile ? 4 : 8,
+    minWidth: isMobile ? 28 : 40,
+    minHeight: isMobile ? 28 : 40,
   },
   iconButton: {
     backgroundColor: '#e5e7eb',
     borderColor: '#d1d5db',
     borderWidth: 1,
     borderRadius: 10,
-    width: 44,
-    height: 44,
+    width: isMobile ? 32 : 44,
+    height: isMobile ? 32 : 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   muteButton: {
-    backgroundColor: '#e5e7eb', // gray-200
-    borderColor: '#d1d5db',     // gray-300
+    backgroundColor: '#e5e7eb',
+    borderColor: '#d1d5db',
   },
   muteButtonActive: {
-    backgroundColor: '#9ca3af', // gray-400
-    borderColor: '#6b7280',     // gray-500
+    backgroundColor: '#9ca3af',
+    borderColor: '#6b7280',
   },
   footer: {
-    paddingVertical: 24,
+    paddingVertical: isMobile ? 8 : 24,
     alignItems: 'center',
+    display: isMobile ? 'none' : 'flex',
   },
   footerText: {
-    fontSize: 14,
+    fontSize: isMobile ? 10 : 14,
     color: '#9ca3af',
     textAlign: 'center',
   },

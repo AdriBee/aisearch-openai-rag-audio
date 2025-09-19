@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 interface StatusMessageProps {
@@ -67,7 +67,7 @@ const StatusMessage: React.FC<StatusMessageProps> = ({ isRecording }) => {
               {
                 height: animatedValue.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [8, 32],
+                  outputRange: Platform.OS === 'web' ? [4, 16] : [8, 32],
                 }),
                 opacity: animatedValue,
               },
@@ -85,34 +85,34 @@ const StatusMessage: React.FC<StatusMessageProps> = ({ isRecording }) => {
 const styles = StyleSheet.create({
   notRecordingText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: Platform.OS === 'web' ? 10 : 16,
     textAlign: 'center',
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: Platform.OS === 'web' ? 8 : 24,
+    marginBottom: Platform.OS === 'web' ? 4 : 16,
   },
   recordingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: Platform.OS === 'web' ? 8 : 24,
+    marginBottom: Platform.OS === 'web' ? 4 : 16,
   },
   barsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: 32,
-    width: 32,
+    height: Platform.OS === 'web' ? 16 : 32,
+    width: Platform.OS === 'web' ? 16 : 32,
     justifyContent: 'space-around',
-    marginRight: 12,
+    marginRight: Platform.OS === 'web' ? 6 : 12,
   },
   bar: {
-    width: 4,
+    width: Platform.OS === 'web' ? 2 : 4,
     backgroundColor: '#ffffff',
-    borderRadius: 2,
+    borderRadius: Platform.OS === 'web' ? 1 : 2,
   },
   recordingText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: Platform.OS === 'web' ? 10 : 16,
   },
 });
 

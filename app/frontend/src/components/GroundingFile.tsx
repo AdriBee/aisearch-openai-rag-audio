@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { GroundingFile as GroundingFileType } from '../types';
 
@@ -11,7 +11,7 @@ interface GroundingFileProps {
 const GroundingFile: React.FC<GroundingFileProps> = ({ file, onPress }) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
-      <MaterialIcons name="description" size={16} color="#ffffff" style={styles.icon} />
+      <MaterialIcons name="description" size={Platform.OS === 'web' ? 12 : 16} color="#ffffff" style={styles.icon} />
       <Text style={styles.fileName} numberOfLines={1}>
         {file.name}
       </Text>
@@ -26,18 +26,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#374151',
     borderWidth: 1,
     borderColor: '#4b5563',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    margin: 4,
-    minWidth: 100,
+    borderRadius: Platform.OS === 'web' ? 16 : 20,
+    paddingHorizontal: Platform.OS === 'web' ? 8 : 12,
+    paddingVertical: Platform.OS === 'web' ? 4 : 8,
+    margin: Platform.OS === 'web' ? 2 : 4,
+    minWidth: Platform.OS === 'web' ? 80 : 100,
+    maxWidth: Platform.OS === 'web' ? 140 : 200,
   },
   icon: {
-    marginRight: 8,
+    marginRight: Platform.OS === 'web' ? 4 : 8,
   },
   fileName: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: Platform.OS === 'web' ? 10 : 14,
     fontWeight: '500',
     flex: 1,
   },
